@@ -1,0 +1,154 @@
+<head>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
+<script src="Highcharts-2/js/highcharts.js" type="text/javascript"></script>
+<script type="text/javascript" src="Highcharts-2/js/themes/grid.js"></script>
+
+<script type="text/javascript" charset="utf-8">
+
+	//get all months for range of years in which projects were started
+	function getAllMonths(startYear,endYear) {
+		var allMonths = [];
+		
+		for (var i = startYear; i<=endYear; i++){
+			for (var j = 1; j<=12; j++){
+				var zeroString = (j.toString().length < 2) ? '0' : '';
+				var newDate = i.toString() + '-' + zeroString + j.toString();
+				allMonths.push(newDate);
+			}
+		}		
+		return allMonths;		
+	}
+
+
+	function projectStartByMonth(data) {
+	var selectedProjects = data.projects;
+	var latestDate = null;
+	var earliestDate = null;
+	var countsPerMonth = new Object()
+      	for (var i=0; i < selectedProjects.length; i++) {
+      		var project = selectedProjects[i];
+      		if(project.started){
+      		
+      		var monthStarted = project.started.slice(0,7);
+      		if (monthStarted > latestDate || latestDate == null){
+      			latestDate = monthStarted
+      		}
+      		if (monthStarted < earliestDate || earliestDate == null){
+      			earliestDate = monthStarted
+      		}
+      		if (countsPerMonth[monthStarted]) {
+      			countsPerMonth[monthStarted]++;
+      		}
+      		else {
+      			countsPerMonth[monthStarted] = 1;
+      		}  
+      		}  		
+      	}
+      	
+    var startYear = parseInt(earliestDate.slice(0,5));
+	var endYear = parseInt(latestDate.slice(0,5));
+      	
+    var allMonths = getAllMonths(startYear, endYear)
+      	
+    var sortedCountsByYear = []
+    //sort data and back-fill zeros when no projects were started
+    for (var item in allMonths) {
+    	var dateYear = allMonths[item].slice(0,4);
+    	if(!sortedCountsByYear[dateYear]){
+    		sortedCountsByYear[dateYear] = {name:dateyear,data:[allMonths[item] ? allMonths[item] : 0]}
+    	}
+    	else {
+    		sortedCountsByYear[dateYear].data.push([allMonths[item] ? allMonths[item] : 0])
+    	}
+    }
+    
+      	
+	var chart;
+    $(document).ready(function() {
+        chart = new Highcharts.Chart({
+            chart: {
+                renderTo: 'container',
+                type: 'column'
+            },
+            title: {
+                text: 'Project Started by Month'
+            },
+            xAxis: {
+                categories: [
+                    'Jan',
+                    'Feb',
+                    'Mar',
+                    'Apr',
+                    'May',
+                    'Jun',
+                    'Jul',
+                    'Aug',
+                    'Sep',
+                    'Oct',
+                    'Nov',
+                    'Dec'
+                ]
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'Projects'
+                }
+            },
+            legend: {
+                layout: 'vertical',
+                backgroundColor: '#FFFFFF',
+                align: 'left',
+                verticalAlign: 'top',
+                x: 100,
+                y: 70,
+                floating: true,
+                shadow: true
+            },
+            tooltip: {
+                formatter: function() {
+                    return ''+
+                        this.x +': '+ this.y +' mm';
+                }
+            },
+            plotOptions: {
+                column: {
+                    pointPadding: 0.2,
+                    borderWidth: 0
+                }
+            },
+                series: sortedCountsByYear
+        });
+    });
+	}
+   
+  RavTest = function() {   
+    var projectData = null; 
+    return {
+    projectReceived: function(data) {
+        projectData = data;
+      },
+    
+      foo: function() {
+      	projectStartByMonth(projectData);
+      	var selectedProjects = projectData.projects;
+      	var projectList = document.createElement("ul");
+      	for (var i=0; i < selectedProjects.length; i++) {
+      		var project = selectedProjects[i];
+      		var li = document.createElement("li");
+      		li.innerHTML = project.name;
+      		projectList.appendChild(li);
+      	}
+      	var projectDiv = document.getElementById("projects");
+      	projectDiv.appendChild(projectList);
+      }
+     }
+  }();
+</script>
+<script src="http://api.ravelry.com/projects/blacktabi/progress.json?callback=RavTest.projectReceived&key=2db7bf6bf741e85881eb4b22e97f556029ee5e25&status=in-progress+hibernating+finished+frogged&notes=true"></script>
+</head>
+<body>			 
+<div id="container" style="width: 100%; height: 400px"></div>
+<div id="projects"></div>
+<script> RavTest.foo(); </script>
+</body>
