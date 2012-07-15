@@ -1,0 +1,170 @@
+        <style type="text/css" media="screen">
+
+  .rav_project {
+    margin-bottom: 5px;
+  }
+  
+  .rav_project a.rav_title {
+    font-size: .9em;
+  }
+  
+  .rav_project .rav_progress_text {
+    position: relative;
+    text-align: center;
+  }
+
+  .rav_project .rav_progress_bar_wrapper {
+    border: 1px solid #eee;
+    margin-top: 2px;
+  } 
+
+  .rav_project .rav_progress_bar { 
+    position: relative;
+    padding: 1px;
+    border-left: 1px solid #aaa;
+    border-top: 1px solid #aaa;
+    border-bottom: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+    background-color: #eee;
+  }
+
+  .rav_project .rav_progress_bar .rav_progress_filled { 
+    position: absolute;
+  }
+  
+  .rav_project .rav_photo_link {
+    margin-bottom: 5px;
+    display: block;
+    width: 77px;
+    height: 77px;
+    margin-left: 1px;
+    margin-top: 5px;
+    border: 1px solid #cccccc;
+  }
+  
+  .rav_project .rav_photo_link img {
+    width: 75px;
+    height: 75px;
+    border: 1px solid #ffffff;
+  }
+  
+  .rav_project_with_photos {
+    margin-bottom: 20px;
+  }
+  
+</style>
+
+<script type="text/javascript" charset="utf-8">
+  RavelryThing = function() {
+    var progressData = null;
+    
+    // Dollar and Dollar E convenience
+    var $ = function(id) { return document.getElementById(id); };
+
+    var $E = function(data) {
+        var el;
+        if ('string' == typeof data) {
+          el = document.createTextNode(data);
+        } else {
+          el = document.createElement(data.tag);
+          delete(data.tag);
+          if ('undefined' != typeof data.children) {
+            for (var i=0, child=null; 'undefined' != typeof (child=data.children[i]); i++) { if (child) { el.appendChild($E(child)); } }
+            delete(data.children);
+          }
+          for (attr in data) { 
+            if (attr == 'style') {
+              for (s in data[attr]) {
+                el.style[s] =  data[attr][s];
+              } 
+            } else if (data[attr]) {
+              el[attr]=data[attr]; 
+            }
+          }
+        }
+        return el;
+    };
+    
+    return {
+      progressReceived: function(data) {
+        progressData = data;
+      },
+
+      /*
+        Allowed options are: color, width, height, photos (true/false), 
+        projects (list of permalinks for specific projects). For example:
+        drawProgressBars({color: 'red', width: 200, height: 20});
+      */
+      drawProgressBars: function(options) {
+        if (!progressData) return;
+        
+        if (!options) options = {};
+        if ('number' == typeof options.height) options.height += 'px';
+        if (!options.height) options.height = '1.3em';
+        if (!options.width) options.width = 100;
+        if (!options.color) options.color = 'lightgreen';
+        if (!options.container) options.container = 'rav_progress_bars';
+        
+        var container = $(options.container);
+        if (!container) {
+          // using unicode so that Blogger doesn't get cranky 
+          document.write("\u003cdiv id='" + options.container + "'\u003e\u003c/div\u003e");
+          container = $(options.container);
+        }
+        
+        var selectedProjects = progressData.projects;
+        if (options.projects) {
+          // user has selected individual projects
+          var projectsById = new Object();
+          for (var i=0; i < selectedProjects.length; i++) {
+            projectsById[selectedProjects[i].permalink] = selectedProjects[i];
+          }
+          selectedProjects = new Array();
+          for (var i=0; i < options.projects.length; i++) {
+            var project = projectsById[options.projects[i]];
+            if (project) {
+              selectedProjects.push(project);
+            }
+          }
+        }
+        
+        for (var i=0; i < selectedProjects.length; i++) {
+          var project = selectedProjects[i];
+          var filledStyle = { width: Math.round((project.progress/100) * options.width) + 'px', height: options.height, backgroundColor: options.color};
+          var barStyle = { width: (options.width) + 'px', height: options.height};
+          var className = 'rav_project'
+          
+          var photo = null;
+          if (options.photos && project.thumbnail) {
+            className += ' rav_project_with_photos';
+            photo = { tag: 'a', className: 'rav_photo_link', href: project.thumbnail.flickrUrl, children: [
+                {tag: 'img', src: project.thumbnail.src }
+              ]
+            };
+          }
+          
+          var title = null;
+          if (options.title != false) {
+            title = { tag: 'a', className: 'rav_title', href: project.url, children: [project.name] };
+          }
+          
+          container.appendChild($E({
+            tag: 'div',
+            className: className,
+            children: [ title, photo,
+              { tag: 'div', className: 'rav_progress_bar_wrapper', style: barStyle, children: [
+                { tag: 'div', className: 'rav_progress_bar', style: barStyle, children: [
+                  {tag: 'div', className: 'rav_progress_filled', style: filledStyle},
+                  {tag: 'div', className: 'rav_progress_text', style: barStyle, 
+                    children: [ project.progress + '%' ]}
+                ]}
+              ]}
+            ]
+          }));
+        }
+      }
+    }
+  }();
+</script>
+<script src="http://api.ravelry.com/projects/blacktabi/progress.json?callback=RavelryThing.progressReceived&key=2db7bf6bf741e85881eb4b22e97f556029ee5e25&version=0"></script>
+<script> RavelryThing.drawProgressBars(); </script>
