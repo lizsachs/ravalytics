@@ -4,6 +4,66 @@
     <script type="text/javascript" src="Highcharts-2/js/themes/dark-skies.js"></script>
 
     <script type="text/javascript" charset="utf-8">
+    
+    Ravalytics = function() {
+            var projectData = null;
+            return {
+                projectReceived: function(data) {
+                    projectData = data;
+                },
+
+                calculate: function() {
+                    projectsByMonth(projectData, 'Started');
+                    projectsByMonth(projectData, 'Completed');
+
+                }
+            }
+        }();
+    
+    // iterate over project data to pull out start/completion dates and store sums of projects in a set of nested objects by year/month
+    function projectsByMonth(data, action) {
+            var selectedProjects = data.projects;
+            var endYear = null;
+            var startYear = null;
+
+            var countsByYearAndMonth = new Object();
+            for (var i=0; i < selectedProjects.length; i++) {
+                var project = selectedProjects[i];
+                // right now we only have two options, so we can default to completed if started isn't passed in
+                var projectDate = (action == 'Started' ? project.started : project.completed)
+
+                if(projectDate){
+                    var actionMonth = projectDate.slice(5,7);
+                    var actionYear = projectDate.slice(0,4);
+
+					// we're also interested in when the first and last projects were acted upon so we can use them as endpoints for the chart
+                    if (actionYear > endYear || endYear == null){
+                        endYear = actionYear
+                    }
+                    if (actionYear < startYear || startYear == null){
+                        startYear = actionYear
+                    }
+                    
+                    if (countsByYearAndMonth[actionYear]) {
+                        if(countsByYearAndMonth[actionYear][actionMonth]){
+                            countsByYearAndMonth[actionYear][actionMonth]++;
+                        }
+                        else {
+                            countsByYearAndMonth[actionYear][actionMonth] = 1;
+                        }
+                    }
+                    else {
+                        var months = new Object();
+                        months[actionMonth]=1;
+                        countsByYearAndMonth[actionYear] = months;
+                    }
+                }
+            }
+
+            var formattedData = prepareDataForChart(startYear, endYear, countsByYearAndMonth)
+            prepareChart(formattedData, data.user.name, action)
+
+        }
 
         //prepare data for graph; add zeros for months without data, convert data structure to array taken by Highcharts
         function prepareDataForChart(startYear,endYear, countsByYearAndMonth) {
@@ -11,7 +71,7 @@
 
             for (var i = startYear; i<=endYear; i++){
                 var arrayOfCounts = [];
-                // skipping over years that do not have any data to make charts fit on screen better. Bad practice for informative data, good for simplifying examples!
+                // skipping years that don't have data to make charts a readable size. Bad practice for informative data, good for simplifying examples!
                 if(countsByYearAndMonth[i]){
                     for (var j = 1; j<=12; j++){
                         var monthAsString = (j.toString().length < 2) ? '0' + j.toString() : j.toString();
@@ -24,13 +84,15 @@
             return allMonths;
         }
 
+		// this function is based on sample code from the Highcharts demo charts. I tweaked it a bit to make the charts a bit more dynamic.
         function prepareChart(data, username, status) {
             var chart;
             $(document).ready(function() {
                 chart = new Highcharts.Chart({
                     chart: {
                         renderTo: username + status,
-                        type: 'column'
+                        type: 'column',
+                        marginLeft: 125
                     },
                     title: {
                         text: 'Projects ' + status + ' by ' + username + ' by Month'
@@ -62,9 +124,9 @@
                         backgroundColor: '#FFFFFF',
                         align: 'left',
                         verticalAlign: 'top',
-                        x: 150,
-                        y: 30,
-                        floating: true,
+                        x: -10,
+                        y: 50,
+                        floating: false,
                         shadow: true
                     },
                     tooltip: {
@@ -84,73 +146,16 @@
             });
         }
 
-
-        function projectsByMonth(data, action) {
-            var selectedProjects = data.projects;
-            var endYear = null;
-            var startYear = null;
-
-            var countsByYearAndMonth = new Object();
-            for (var i=0; i < selectedProjects.length; i++) {
-                var project = selectedProjects[i];
-                var projectDate = (action == 'Started' ? project.started : project.completed)
-
-                if(projectDate){
-
-                    var actionMonth = projectDate.slice(5,7);
-                    var actionYear = projectDate.slice(0,4);
-
-                    if (actionYear > endYear || endYear == null){
-                        endYear = actionYear
-                    }
-                    if (actionYear < startYear || startYear == null){
-                        startYear = actionYear
-                    }
-                    if (countsByYearAndMonth[actionYear]) {
-                        if(countsByYearAndMonth[actionYear][actionMonth]){
-                            countsByYearAndMonth[actionYear][actionMonth]++;
-                        }
-                        else {
-                            countsByYearAndMonth[actionYear][actionMonth] = 1;
-                        }
-                    }
-                    else {
-                        var months = new Object();
-                        months[actionMonth]=1;
-                        countsByYearAndMonth[actionYear] = months;
-                    }
-                }
-            }
-
-            var allMonths = prepareDataForChart(startYear, endYear, countsByYearAndMonth)
-            prepareChart(allMonths, data.user.name, action)
-
-        }
-
-        Ravalytics = function() {
-            var projectData = null;
-            return {
-                projectReceived: function(data) {
-                    projectData = data;
-                },
-
-                calculate: function() {
-                    projectsByMonth(projectData, 'Started');
-                    projectsByMonth(projectData, 'Completed');
-
-                }
-            }
-        }();
     </script>
+    
     <script src="http://api.ravelry.com/projects/blacktabi/progress.json?callback=Ravalytics.projectReceived&key=2db7bf6bf741e85881eb4b22e97f556029ee5e25&status=in-progress+hibernating+finished+frogged&notes=true"></script>
     <script> Ravalytics.calculate(); </script>
     <script src="http://api.ravelry.com/projects/LoneStarNeedler/progress.json?callback=Ravalytics.projectReceived&key=571dd6a576368d6aae5496fdd628c9fdf7ced935&status=in-progress+hibernating+finished+frogged&notes=true"></script>
     <script> Ravalytics.calculate(); </script>
 </head>
 <body>
-<div id="LoneStarNeedlerStarted" style="width: 100%; height: 400px"></div>
-<div id="LoneStarNeedlerCompleted" style="width: 100%; height: 400px"></div>
-<div id="blacktabiStarted" style="width: 100%; height: 400px"></div>
-<div id="blacktabiCompleted" style="width: 100%; height: 400px"></div>
-
+<div id="blacktabiStarted" style="width: 100%; height: 300px"></div>
+<div id="blacktabiCompleted" style="width: 100%; height: 300px"></div>
+<div id="LoneStarNeedlerStarted" style="width: 100%; height: 300px"></div>
+<div id="LoneStarNeedlerCompleted" style="width: 100%; height: 300px"></div>
 </body>
