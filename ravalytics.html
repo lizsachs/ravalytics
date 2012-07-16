@@ -13,6 +13,8 @@
                 },
 
                 calculate: function() {
+                	// I could have written a function to calculate the data for both of these simultaneously, which would have been more
+                	// efficient since it would have required fewer iterations, but I wanted to demonstrate the flexibility of the code.
                     projectsByMonth(projectData, 'Started');
                     projectsByMonth(projectData, 'Completed');
 
