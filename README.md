@@ -10,3 +10,5 @@ I originally planned to use charts that simply bucketed data by month and year a
 I didn't have any experience with any particular charting libraries, so I poked around a little and decided that Highcharts looked robust, easy to use, and allowed free use of their libraries for non-commercial use. <http://www.highcharts.com/>
 
 I chose to implement this in a single file because the HTML is minimal.  I considered building up a grails app on the back end to take care of data processing because that's where most of my experience lies, but I decided it would be a good test project to get my hands around some basic javascript and it would simplify the overall code sample.
+
+The next thing I'd like to add to this if given infinite time (full time job + baby limits my extracurricular coding time) would be some analysis of project duration. Perhaps a report that shows the average project time, longest project, shortest project, and a chart of number of projects by average duration in days.
